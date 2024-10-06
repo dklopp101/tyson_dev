@@ -11,12 +11,11 @@
 #include "ram.h"
 #include "vm.h"
 
+#define OPCODE_PRINT_STR "\nexecuting opcode: %u (%s) :: ram address: %u absolute address: %u"
 #define INSIDE_UINT 10
 #define INSIDE_INT  11
 #define PUSH        50
 #define POP         60
-
-using namespace std;
 
 class Ram
 {
@@ -65,6 +64,18 @@ class Ram
         {
             delete[] type_record;
             free(master);
+        }
+
+        uint64_t
+        get_abs_addr(uint8_t* ptr)
+        {
+            return (uint64_t) ptr - base; 
+        }
+
+        uint64_t
+        get_abs_addr(uint32_t relative_addr)
+        {
+            return (uint64_t) ((get_ptr(relative_addr)) - base); 
         }
 
         void
@@ -590,6 +601,8 @@ class DebugVM
     Ram*       ram;
 
     uint32_t   pc;           // program-counter.
+    uint8_t    opcode;
+    uint64_t   abs_addr;
     uint32_t   loop_counter; // loop-base pointer.
     uint32_t   loop_body;    // loop-end pointer.
     uint32_t   loop_end;     // loop counter.
@@ -597,6 +610,7 @@ class DebugVM
     bool       breakpoint_hit;
     bool       exec_locked;
     bool       die_op_hit;
+    bool       print_opcode;
 
     uint32_t  uint_arg_left;
     uint32_t  uint_arg_right;
@@ -640,8 +654,13 @@ class DebugVM
         //     get_user_input();
         //     process_user_input();
         // }
+        opcode   = ram->get_ubyte(pc);
+        abs_addr = ram->get_abs_addr(ram->get_ptr(pc));
 
-        exec_opcode(ram->get_ubyte(pc));
+        if (print_opcode)
+            printf(OPCODE_PRINT_STR, abs_addr, opcode, mnemonic_strings[opcode]);
+            
+        exec_opcode(opcode);
     }
 
     void
@@ -1424,7 +1443,7 @@ class DebugVM
 
     public:
         DebugVM(Ram* ram = nullptr) :
-        ram(ram), exec_locked(true), die_op_hit(false), breakpoint_hit(false)
+        ram(ram), exec_locked(true), die_op_hit(false), breakpoint_hit(false), print_opcode(true)
         {
 			workstack = new WorkStack(STACK_SIZE, malloc(STACK_SIZE));
 			callstack = new CallStack();
