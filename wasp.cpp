@@ -1462,16 +1462,6 @@ do_test()
     delete ram;
 }
 
-
-void do_test1() {
-    cout << "\nprog start" << endl;
-    unique_ptr<Ram> ram = make_unique<Ram>(RAMSIZE);
-    unique_ptr<DebugVM> dvm = make_unique<DebugVM>(ram.get());
-    dvm->loadprog("vmt.fbin");
-    dvm->start_debug();
-    // No need to manually delete, unique_ptr will handle it
-}
-
 int main() {
     do_test();
     return 0;
